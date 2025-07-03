@@ -15,15 +15,10 @@ const getProjects = async () => {
     const enrichedProjects = await Promise.all(
       projects.map(async (project) => {
         try {
-<<<<<<< HEAD
           // Handle potential error responses from API
           const teamMetaRes = await instance.get(`/admin/get_team_members/${project.team_id}`);
           const teamMeta = Array.isArray(teamMetaRes.data) ? teamMetaRes.data[0] : null;
          
-=======
-          const teamMetaRes = await instance.get(`/admin/get_team_members/${project.team_id}`);
-          const teamMeta = teamMetaRes.data[0];
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
           const guideReg = teamMeta?.guide_reg_num;
           const subExpertReg = teamMeta?.sub_expert_reg_num;
 
@@ -33,13 +28,9 @@ const getProjects = async () => {
           if (guideReg) {
             try {
               const guideRes = await instance.get(`/admin/get_name/${guideReg}`);
-<<<<<<< HEAD
               guideName = guideRes.data && guideRes.data[0]?.name
                 ? `${guideRes.data[0].name} (${guideReg})`
                 : `Unknown (${guideReg})`;
-=======
-              guideName = `${guideRes.data[0]?.name || 'Unknown'} (${guideReg})`;
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
             } catch (err) {
               console.error(`Failed to fetch guide name for ${guideReg}`);
             }
@@ -48,19 +39,14 @@ const getProjects = async () => {
           if (subExpertReg) {
             try {
               const subExpertRes = await instance.get(`/admin/get_name/${subExpertReg}`);
-<<<<<<< HEAD
               subExpertName = subExpertRes.data && subExpertRes.data[0]?.name
                 ? `${subExpertRes.data[0].name} (${subExpertReg})`
                 : `Unknown (${subExpertReg})`;
-=======
-              subExpertName = `${subExpertRes.data[0]?.name || 'Unknown'} (${subExpertReg})`;
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
             } catch (err) {
               console.error(`Failed to fetch sub expert name for ${subExpertReg}`);
             }
           }
 
-<<<<<<< HEAD
           // Handle team members response
           let teamMembers = [];
           try {
@@ -83,22 +69,6 @@ const getProjects = async () => {
           try {
             const verifiedWeekRes = await instance.get(`/guide/no_of_weeks_verified/${project.team_id}`);
             verifiedWeek = typeof verifiedWeekRes.data === 'number' ? verifiedWeekRes.data : 0;
-=======
-          const teamRes = await instance.get(`/admin/get_teams/${project.team_id}`);
-          const teamMembers = teamRes.data.map(member => {
-            const isLeader = member.from_reg_num === member.to_reg_num;
-            return {
-              ...member,
-              role: isLeader ? 'leader' : 'member'
-            };
-          });
-
-          // ✅ Fetch verified week count
-          let verifiedWeek = 0;
-          try {
-            const verifiedWeekRes = await instance.get(`/guide/no_of_weeks_verified/${project.team_id}`);
-            verifiedWeek = verifiedWeekRes.data || 0;
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
           } catch (err) {
             console.error(`Failed to fetch verified week for ${project.team_id}`);
           }
@@ -109,11 +79,7 @@ const getProjects = async () => {
             sub_expert_display: subExpertName,
             team_members: teamMembers,
             verified_week: verifiedWeek,
-<<<<<<< HEAD
             completed_review: 0
-=======
-            completed_review: 0 // Optional placeholder if you fetch that later
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
           };
         } catch (error) {
           console.error(`Error enriching project ${project.project_id}:`, error.message);
@@ -129,7 +95,6 @@ const getProjects = async () => {
       })
     );
 
-<<<<<<< HEAD
     setProjectData(enrichedProjects.filter(Boolean)); // Filter out any undefined/null values
   } catch (err) {
     console.error("Error fetching projects:", err.message);
@@ -217,14 +182,6 @@ const getProjects = async () => {
 //   }
 // };
 
-=======
-    setProjectData(enrichedProjects);
-  } catch (err) {
-    console.error("Error fetching projects:", err.message);
-  }
-};
-
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
 
   const handleViewProject = (project) => {
     setSelectedProject(project);
@@ -250,11 +207,7 @@ const getProjects = async () => {
     const leader = selectedProject.team_members?.find(member => member.role === 'leader');
 
     console.log();
-<<<<<<< HEAD
    
-=======
-    
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
     return (
       <div className="min-h-screen p-6">
         <div className="max-w-6xl mx-auto">
@@ -309,34 +262,23 @@ const getProjects = async () => {
                   <h3 className="bg-white text-lg font-semibold text-gray-800">Team Members</h3>
                 </div>
                 <div className="bg-white space-y-3">
-<<<<<<< HEAD
 {selectedProject.team_members?.map((member, index) => {
   // Ensure member is an object with the expected properties
   if (!member || typeof member !== 'object') return null;
  
-=======
-                  {selectedProject.team_members?.map((member, index) => {
-  console.log(member); // ✅ Correct place to log each member
-
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
   return (
     <div key={index} className="bg-gray-50 flex items-center justify-between p-4 border border-gray-200 rounded-lg">
       <div className="bg-gray-50 flex-1">
         <div className="bg-gray-50 flex items-center gap-2 mb-1">
-<<<<<<< HEAD
           <span className="bg-gray-50 font-medium text-gray-800">
             {member.name || 'Unknown Member'}
           </span>
-=======
-          <span className="bg-gray-50 font-medium text-gray-800">{member.name}</span>
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
           {member.role === 'leader' && (
             <span className="bg-gray-300 text-gray-700 px-2 py-1 rounded text-xs font-medium">
               Team Leader
             </span>
           )}
         </div>
-<<<<<<< HEAD
         <p className="bg-gray-50 text-sm text-gray-600">
           {member.emailId || 'No email'}
         </p>
@@ -344,13 +286,6 @@ const getProjects = async () => {
       <div className="bg-gray-50 text-right">
         <span className="bg-gray-50 text-gray-700 px-3 py-1 rounded text-sm font-medium">
           {member.reg_num || 'No ID'}
-=======
-        <p className="bg-gray-50 text-sm text-gray-600">{member.emailId}</p>
-      </div>
-      <div className="bg-gray-50 text-right">
-        <span className="bg-gray-50 text-gray-700 px-3 py-1 rounded text-sm font-medium">
-          {member.reg_num}
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
         </span>
       </div>
     </div>
