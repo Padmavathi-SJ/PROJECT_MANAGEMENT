@@ -58,7 +58,7 @@ router.patch("/sub_expert/accept_reject/:status/:team_id/:semester/:my_id", user
               if (error) return next(error);
               else {
                 const mentoringTeams = result.length;
-                if (mentoringTeams <= 3) {
+                if (mentoringTeams <= 4) {
                   // After accepting the request, update the expert in teams table
                   let sql3 = "UPDATE teams SET sub_expert_reg_num = ? WHERE team_id = ?";
                   db.query(sql3, [my_id, team_id], (error, result) => {
