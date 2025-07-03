@@ -76,7 +76,7 @@ router.patch("/guide/accept_reject/:status/:team_id/:semester/:my_id", userAuth,
             if (error) return next(error);
 
             const mentoringTeams = result.length;
-            if (mentoringTeams <= 3) {
+            if (mentoringTeams <= 4) {
               // Assign guide to the teams tablew
               let sql3 = "UPDATE teams SET guide_reg_num = ? WHERE team_id = ?";
               db.query(sql3, [my_id, team_id], (error, result) => {
