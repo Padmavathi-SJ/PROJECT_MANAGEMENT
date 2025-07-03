@@ -257,10 +257,7 @@ app.use((req, res, next) => {
 });
 
 // Error Handler
-<<<<<<< HEAD
 /*
-=======
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
 app.use((error, req, res, next) => {
     res.status(error.status || 500);
     res.send({
@@ -270,7 +267,7 @@ app.use((error, req, res, next) => {
         },
     });
 });
-<<<<<<< HEAD
+
 */
 
 //Global error handler 
@@ -283,8 +280,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-=======
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
+
 
 // Start server
 app.listen(PORT, () =>

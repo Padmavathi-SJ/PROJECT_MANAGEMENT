@@ -148,33 +148,12 @@ router.get("/student/expert_status/:team_id", userAuth, (req, res, next) => {
 
 
 // adds the connection request in the db -> invite button
-<<<<<<< HEAD
 
-=======
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
+
 router.post("/student/join_request", userAuth, (req, res, next) => {
   try {
     let { from_reg_num, to_reg_num } = req.body;
 
-<<<<<<< HEAD
-    if (!to_reg_num?.trim() || from_reg_num === to_reg_num) {
-      return next(createError.BadRequest("Registration numbers are invalid!"));
-    }
-
-    let query1 = "SELECT name, emailId, reg_num, dept FROM users WHERE reg_num = ?";
-    db.query(query1, [to_reg_num], (error, result) => {
-      if (error) return next(error);
-      if (result.length === 0) return next(createError.NotFound("User not found!"));
-
-      let { name, emailId, reg_num, dept } = result[0];
-      if (!name?.trim() || !emailId?.trim() || !reg_num?.trim() || !dept?.trim()) {
-        return next(createError.BadRequest("User details are incomplete!"));
-      }
-
-      let sql = `SELECT * FROM team_requests 
-                 WHERE (from_reg_num = ? AND to_reg_num = ?) 
-                    OR (to_reg_num = ? AND from_reg_num = ?)`;
-=======
     if (!to_reg_num.trim() || from_reg_num === to_reg_num) {
       return next(createError.BadRequest(`reg_number are not defined!`));
     }
@@ -187,119 +166,10 @@ router.post("/student/join_request", userAuth, (req, res, next) => {
       if (!name.trim() || !emailId.trim() || !reg_num.trim() || !dept.trim()) return next(createError.BadRequest("User details not found!"));
       // checks for already a connection request exists or not for me and him
       let sql = "SELECT * FROM team_requests WHERE (from_reg_num = ? AND to_reg_num = ?) or (to_reg_num = ? and from_reg_num = ?)";
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
       db.query(sql, [from_reg_num, to_reg_num, from_reg_num, to_reg_num], (error, result) => {
         if (error) return next(error);
 
         if (result.length > 0) {
-<<<<<<< HEAD
-          return res.status(409).json({
-            success: false,
-            message: `Connection request already exists with status: ${result[0].status}`,
-          });
-        }
-
-        let checkConnection = `SELECT * FROM team_requests 
-                               WHERE (to_reg_num = ? OR from_reg_num = ?) 
-                                 AND status = 'accept'`;
-        db.query(checkConnection, [to_reg_num, to_reg_num], (error, result) => {
-          if (error) return next(error);
-          if (result.length > 0) {
-            return res.status(400).json({
-              success: false,
-              message: "He is already a member of some other team!",
-            });
-          }
-
-          let checkSender = `SELECT * FROM team_requests 
-                             WHERE to_reg_num = ? AND status = 'accept'`;
-          db.query(checkSender, [from_reg_num], (error, result) => {
-            if (error) return next(error);
-            if (result.length > 0) {
-              return res.status(400).json({
-                success: false,
-                message: "Sender is already a member of some other team!",
-              });
-            }
-
-            let size = `SELECT * FROM team_requests 
-                        WHERE from_reg_num = ? AND status = 'accept'`;
-            db.query(size, [from_reg_num], (error, result) => {
-              if (error) return next(error);
-              if (result.length >= 3) {
-                return res.status(400).json({
-                  success: false,
-                  message: "You can't form a team with more than 4 members!",
-                });
-              }
-
-              let query = `SELECT project_type, company_name, semester 
-                           FROM users 
-                           WHERE reg_num IN (?, ?)`;
-              db.query(query, [from_reg_num, to_reg_num], (error, result) => {
-                if (error) return next(error);
-                if (result.length !== 2) {
-                  return res.status(400).json({
-                    success: false,
-                    message: "One or both students not found.",
-                  });
-                }
-
-                const [user1, user2] = result;
-                const { project_type: type1, company_name: company1, semester: sem1 } = user1;
-                const { project_type: type2, company_name: company2, semester: sem2 } = user2;
-
-                if (!type1 || !type2) {
-                  return res.status(400).json({
-                    success: false,
-                    message: "One or both users haven't set their project type!",
-                  });
-                }
-
-                if (type1.toLowerCase() !== type2.toLowerCase()) {
-                  return res.status(400).json({
-                    success: false,
-                    message: "Both members should be either Internal or External!",
-                  });
-                }
-
-                if (type1.toLowerCase() === "external" && company1 !== company2) {
-                  return res.status(400).json({
-                    success: false,
-                    message: "Both external members must be from the same company!",
-                  });
-                }
-
-                if (sem1 !== sem2) {
-                  return res.status(400).json({
-                    success: false,
-                    message: "You can't send requests to seniors or juniors!",
-                  });
-                }
-
-                // All validations passed — insert the team request
-                let sql1 = `INSERT INTO team_requests 
-                            (name, emailId, reg_num, dept, from_reg_num, to_reg_num, status)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)`;
-                let values = [name, emailId, reg_num, dept, from_reg_num, to_reg_num, 'interested'];
-
-                db.query(sql1, values, (error, result) => {
-                  if (error) return next(error);
-
-                  return res.status(200).json({
-                    success: true,
-                    message: "Request added successfully!",
-                  });
-                });
-              });
-            });
-          });
-        });
-      });
-    });
-  } catch (error) {
-    next(error);
-=======
           return res.send(`Connection request already exists with status: ${result[0].status}`);
         }
 
@@ -362,16 +232,11 @@ router.post("/student/join_request", userAuth, (req, res, next) => {
 
   } catch (error) {
     next(error.message);
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
   }
 });
 
 // filters the request i received -> notification
 
-<<<<<<< HEAD
-
-=======
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
 router.get("/student/request_recived/:reg_num", (req, res, next) => {
   try {
     const { reg_num } = req.params;

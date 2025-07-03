@@ -685,8 +685,5 @@ router.post("/sub_expert/review/add_team_marks/:expert_reg_num", userAuth, (req,
   });
 });
 
-<<<<<<< HEAD
 module.exports = router;
-=======
-module.exports = router;
->>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
+
