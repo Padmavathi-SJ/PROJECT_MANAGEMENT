@@ -827,4 +827,8 @@ router.get("/guide/fetchDeadlines/:team_id", (req, res, next) => {
 })
 
 
+<<<<<<< HEAD
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> c997d5a6db3e7e1e32a04496fe2303a0cd5b0a8f
