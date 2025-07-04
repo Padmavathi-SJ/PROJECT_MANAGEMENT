@@ -279,23 +279,95 @@ router.post("/guide/add_review_details/:request_id/:status/:guide_reg_num/:team_
 
 // fetching the upcoming reviews
 
+// Updated guide upcoming reviews endpoint
+// Updated guide upcoming reviews endpoint
+// Updated guide upcoming reviews endpoint
 router.get('/guide/fetch_upcoming_reviews/:guide_reg_num', (req, res, next) => {
   try {
     const { guide_reg_num } = req.params;
-    if (!guide_reg_num) return next(createError.BadRequest('guide register number is undefined!'));
-    let sql = `SELECT * FROM scheduled_reviews WHERE guide_reg_num = ? AND (attendance IS NULL OR attendance = '')AND CONCAT(review_date, ' ', start_time) >= NOW() - INTERVAL 3 HOUR;`;
+    if (!guide_reg_num) {
+      return res.status(400).json({ error: 'Guide register number is required' });
+    }
+    
+    const currentDateTime = new Date();
+    const threeHoursEarlier = new Date(currentDateTime.getTime() - 3 * 60 * 60 * 1000);
+    
+    const sql = `
+      SELECT * FROM review_requests 
+      WHERE guide_reg_num = ? 
+      AND guide_status = 'accept'
+      AND (review_date > DATE(?) OR 
+          (review_date = DATE(?) AND start_time >= TIME(?)))
+      ORDER BY review_date ASC, start_time ASC
+    `;
 
-    db.query(sql, [guide_reg_num], (error, result) => {
-      if (error) return next(error);
-      if (result.length === 0) return next(createError.NotFound('meeting links not found!'));
-      // console.log(result, "/guide/fetch_upcoming_reviews/");
-      return res.send(result);
-    })
+    db.query(
+      sql, 
+      [
+        guide_reg_num,
+        threeHoursEarlier,
+        threeHoursEarlier,
+        threeHoursEarlier.toTimeString().slice(0, 8)
+      ],
+      (error, results) => {
+        if (error) {
+          console.error('Database error:', error);
+          return res.status(500).json({ error: 'Database error' });
+        }
+        return res.json(results);
+      }
+    );
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
-  catch (error) {
-    next(error);
+});
+
+//fetch expert upcoming reviews 
+
+// Expert upcoming reviews endpoint
+// Expert upcoming reviews endpoint
+// Expert upcoming reviews endpoint
+router.get('/sub_expert/fetch_upcoming_reviews/:expert_reg_num', (req, res, next) => {
+  try {
+    const { expert_reg_num } = req.params;
+    if (!expert_reg_num) {
+      return res.status(400).json({ error: 'Expert register number is required' });
+    }
+    
+    const currentDateTime = new Date();
+    const threeHoursEarlier = new Date(currentDateTime.getTime() - 3 * 60 * 60 * 1000);
+    
+    const sql = `
+      SELECT * FROM review_requests 
+      WHERE expert_reg_num = ? 
+      AND expert_status = 'accept'
+      AND (review_date > DATE(?) OR 
+          (review_date = DATE(?) AND start_time >= TIME(?)))
+      ORDER BY review_date ASC, start_time ASC
+    `;
+
+    db.query(
+      sql, 
+      [
+        expert_reg_num,
+        threeHoursEarlier,
+        threeHoursEarlier,
+        threeHoursEarlier.toTimeString().slice(0, 8)
+      ],
+      (error, results) => {
+        if (error) {
+          console.error('Database error:', error);
+          return res.status(500).json({ error: 'Database error' });
+        }
+        return res.json(results);
+      }
+    );
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
-})
+});
 
 // fetch completed reviews
 
