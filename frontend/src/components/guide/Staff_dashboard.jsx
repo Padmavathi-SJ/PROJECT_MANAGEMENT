@@ -17,6 +17,10 @@ function Staff_dashboard() {
   const [upcomingGuideReviews, setUpcomingGuideReviews] = useState([]);
   const [upcomingExpertReviews, setUpcomingExpertReviews] = useState([]);
   const [completedReviewMap, setCompletedReviewMap] = useState({});
+  const [rejectReasons, setRejectReasons] = useState({});
+
+  const [reasonInputs, setReasonInputs] = useState({});
+
 
   const reg_num = useSelector((state) => state.userSlice.reg_num);
   const name = useSelector((state) => state.userSlice.name);
@@ -364,53 +368,62 @@ const handleAction = async (type, status, team_id, semester) => {
   console.log(GuideTeams);
 
 
- const renderRequestCard = (req, type) => (
-  <div key={`${type}_${req.from_team_id}`} className="bg-gradient-to-r bg-white border-blue-200 rounded-xl p-4 mb-3 hover:shadow-md transition-all duration-200">
-    <div className="flex items-start justify-between">
-      <div className="flex-1 bg-white">
-        <div className="flex items-center bg-white gap-2 mb-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${type === 'guide' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+const renderRequestCard = (req, type) => {
+  const inputKey = `${type}_${req.from_team_id}`;
+  const currentReason = reasonMap[inputKey] || "";
+
+  const handleReasonChange = (e) => {
+    setReasonMap(prev => ({
+      ...prev,
+      [inputKey]: e.target.value
+    }));
+  };
+
+  return (
+    <div key={inputKey} className="bg-gradient-to-r bg-white border-blue-200 rounded-xl p-4 mb-3 hover:shadow-md transition-all duration-200">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 bg-white">
+          <div className="flex items-center bg-white gap-2 mb-2">
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              type === 'guide' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
             }`}>
-            {type.charAt(0).toUpperCase() + type.slice(1)} Request  
-          </span>
-        </div>
-        <p className="font-semibold bg-white text-gray-900 mb-1">
-          Team <span className=" bg-white text-blue-600">{req.from_team_id}</span>
-        </p>
-        <p className="text-gray-700 text-sm mb-3 bg-white">{req.project_name || req.project_id}</p>
+              {type.charAt(0).toUpperCase() + type.slice(1)} Request  
+            </span>
+          </div>
+          <p className="font-semibold bg-white text-gray-900 mb-1">
+            Team <span className="bg-white text-blue-600">{req.from_team_id}</span>
+          </p>
+          <p className="text-gray-700 text-sm mb-3 bg-white">{req.project_name || req.project_id}</p>
 
-        <input
-          type="text"
-          placeholder="Reason (required if rejecting)"
-          value={reasonMap[`${type}_${req.from_team_id}`] || ""}
-          onChange={(e) =>
-            setReasonMap(prev => ({
-              ...prev,
-              [`${type}_${req.from_team_id}`]: e.target.value,
-            }))
-          }
-          className="w-full border bg-white border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent mb-3"
-        />
+          <input
+            type="text"
+            key={`input_${inputKey}`}  // Add unique key to force re-render
+            placeholder="Enter reason (required for rejection)"
+            value={currentReason}
+            onChange={handleReasonChange}
+            className="w-full border bg-white border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent mb-3"
+          />
 
-        <div className="flex bg-white gap-2">
-          <button
-            onClick={() => handleAction(type, "accept", req.from_team_id, req.team_semester)}
-            className="bg-green-600 group hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-1"
-          >
-            <CheckCircle className="w-4 group-hover:bg-green-700 bg-green-600 h-4 transition-colors duration-200 " />
-            Accept
-          </button>
-          <button
-            onClick={() => handleAction(type, "reject", req.from_team_id, req.team_semester)}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            Reject
-          </button>
+          <div className="flex bg-white gap-2">
+            <button
+              onClick={() => handleAction(type, "accept", req.from_team_id, req.team_semester)}
+              className="bg-green-600 group hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-1"
+            >
+              <CheckCircle className="w-4 group-hover:bg-green-700 bg-green-600 h-4 transition-colors duration-200" />
+              Accept
+            </button>
+            <button
+              onClick={() => handleAction(type, "reject", req.from_team_id, req.team_semester)}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              Reject
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
   const totalNotifications = guideRequests.length + expertRequests.length + upcomingGuideReviews.length + upcomingExpertReviews.length;
 

@@ -2,6 +2,227 @@ import React, { useEffect, useState } from 'react';
 import instance from '../../utils/axiosInstance';
 import Select from 'react-select';
 import { useSelector } from 'react-redux';
+
+const StatusDisplay = ({ guideStatusList = [], expertStatusList = [], project = {}, getStatus }) => {
+  const [expertsList, setExpertsList] = useState([]);
+  const [guidesList, setGuidesList] = useState([]);
+  const [selectedExperts, setSelectedExperts] = useState([]);
+  const [selectedGuides, setSelectedGuides] = useState([]);
+  const teamselector = useSelector((State) => State.teamSlice);
+  const userselector = useSelector((State) => State.userSlice);
+
+  useEffect(() => {
+    async function fetchExpertsAndGuides() {
+      try {
+        const [expertRes, guideRes] = await Promise.all([
+          instance.get('/admin/get_users/staff', { withCredentials: true }),
+          instance.get('/admin/get_users/staff', { withCredentials: true }),
+        ]);
+        if (expertRes.status === 200) setExpertsList(expertRes.data);
+        if (guideRes.status === 200) setGuidesList(guideRes.data);
+      } catch (err) {
+        console.error('Fetch Error:', err);
+        alert('Failed to load experts and guides.', err);
+      }
+    }
+    fetchExpertsAndGuides();
+  }, []);
+
+  const selectedGuideRegs = guideStatusList.map(item => item.to_guide_reg_num);
+  const selectedExpertRegs = expertStatusList.map(item => item.to_expert_reg_num);
+  const excludedRegs = new Set([...selectedGuideRegs, ...selectedExpertRegs]);
+
+  const isGuideAssigned = guideStatusList.some(item => item.status !== 'reject');
+  const isExpertAssigned = expertStatusList.some(item => item.status !== 'reject');
+
+  const filteredGuideOptions = guidesList
+    .filter(guide =>
+      !excludedRegs.has(guide.reg_num) &&
+      !selectedExperts.includes(guide.reg_num) &&
+      !selectedGuides.includes(guide.reg_num)
+    )
+    .map((guide) => ({
+      value: guide.reg_num,
+      label: `${guide.name} (${guide.reg_num})`,
+    }));
+
+  const filteredExpertOptions = expertsList
+    .filter(expert =>
+      !excludedRegs.has(expert.reg_num) &&
+      !selectedGuides.includes(expert.reg_num) &&
+      !selectedExperts.includes(expert.reg_num)
+    )
+    .map((expert) => ({
+      value: expert.reg_num,
+      label: `${expert.name} (${expert.reg_num})`,
+    }));
+
+  const handleExpertChange = (selectedOptions) => {
+    const selectedRegNums = selectedOptions.map(option => option.value);
+    setSelectedExperts(selectedRegNums);
+  };
+
+  const handleGuideChange = (selectedOptions) => {
+    const selectedRegNums = selectedOptions.map(option => option.value);
+    setSelectedGuides(selectedRegNums);
+  };
+
+  const customFilter = (option, inputValue) => {
+    const label = option.label.toLowerCase();
+    const value = option.value.toLowerCase();
+    const search = inputValue.toLowerCase();
+    return label.includes(search) || value.includes(search);
+  };
+
+  const handleSubmit = async (e, type) => {
+    e.preventDefault();
+    try {
+      if (type === 'guide') {
+        if (selectedGuides.length === 0) {
+          alert('Please select at least one guide');
+          return;
+        }
+        await instance.post(`/guide/sent_request_to_guide/${userselector.semester}`, {
+          "from_team_id": teamselector[0].team_id,
+          "project_id": project.project_id,
+          "project_name": project.project_name.trim(),
+          "to_guide_reg_num": selectedGuides,
+        });
+        setSelectedGuides([]);
+      } else if (type === 'expert') {
+        if (selectedExperts.length === 0) {
+          alert('Please select at least one expert');
+          return;
+        }
+        await instance.post(`/sub_expert/sent_request_to_expert/${userselector.semester}`, {
+          "from_team_id": teamselector[0].team_id,
+          "project_id": project.project_id,
+          "project_name": project.project_name.trim(),
+          "to_expert_reg_num": selectedExperts,
+        });
+        setSelectedExperts([]);
+      }
+      getStatus();
+    } catch (error) {
+      console.log(error, "error");
+    }
+  };
+
+  return (
+    <div className="bg-white mt-10 p-6 rounded-lg shadow-sm">
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">Guide Status List</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-300">
+            <thead className="bg-white">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-300">Guide Reg No.</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-300">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-300">Reason</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {guideStatusList.map((item, index) => (
+                <tr key={index}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.to_guide_reg_num}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      ${item.status === 'accept' ? 'bg-green-100 text-green-800' :
+                        item.status === 'reject' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'}`}>
+                      {item.status === 'interested' ? 'pending' : item.status || 'N/A'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.reason || 'N/A'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!isGuideAssigned && (
+          <div className="mb-6 bg-white">
+            <h3 className="text-md bg-white font-medium mb-2">Select Guides:</h3>
+            <form onSubmit={(e) => handleSubmit(e, 'guide')}>
+              <Select
+                options={filteredGuideOptions}
+                isMulti
+                onChange={handleGuideChange}
+                value={filteredGuideOptions.filter(option => selectedGuides.includes(option.value))}
+                placeholder="Select guides..."
+                filterOption={customFilter}
+                closeMenuOnSelect={false}
+              />
+              <button type="submit" className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md">
+                Submit
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">Expert Status List</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-300">
+            <thead className="bg-white">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-300">Expert Reg No.</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-300">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-300">Reason</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {expertStatusList.map((item, index) => (
+                <tr key={index}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.to_expert_reg_num}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      ${item.status === 'accept' ? 'bg-green-100 text-green-800' :
+                        item.status === 'reject' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'}`}>
+                      {item.status === 'interested' ? 'pending' : item.status || 'N/A'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.reason || 'N/A'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!isExpertAssigned && (
+          <div className="mb-6 bg-white">
+            <h3 className="text-md bg-white font-medium mb-2">Select Subject Experts:</h3>
+            <form onSubmit={(e) => handleSubmit(e, 'expert')}>
+              <Select
+                options={filteredExpertOptions}
+                isMulti
+                onChange={handleExpertChange}
+                value={filteredExpertOptions.filter(option => selectedExperts.includes(option.value))}
+                placeholder="Select experts..."
+                filterOption={customFilter}
+                closeMenuOnSelect={false}
+              />
+              <button type="submit" className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md">
+                Submit
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default StatusDisplay;
+
+
+
+
+/*
+import React, { useEffect, useState } from 'react';
+import instance from '../../utils/axiosInstance';
+import Select from 'react-select';
+import { useSelector } from 'react-redux';
 const StatusDisplay = ({ guideStatusList = [], expertStatusList = [], project = {}, getStatus }) => {
     const [expertsList, setExpertsList] = useState([]);
     const [guidesList, setGuidesList] = useState([]);
@@ -195,7 +416,7 @@ const StatusDisplay = ({ guideStatusList = [], expertStatusList = [], project = 
                             ))}
                         </tbody>
                     </table>
-                    {/* Subject Experts Dropdown */}
+                  
                 </div>
                 {expertStatusList.every(status => status === 'reject') || expertStatusList.length === 0 ? (
                     <div className="mb-6 bg-white">
@@ -230,3 +451,5 @@ const StatusDisplay = ({ guideStatusList = [], expertStatusList = [], project = 
 };
 
 export default StatusDisplay;
+
+*/
