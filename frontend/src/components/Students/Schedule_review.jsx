@@ -59,66 +59,75 @@ const ScheduleReview = () => {
     if (file) setSelectedFile(file);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const { project_id, project_name, team_lead, review_date, start_time, isOptional, reason } = form;
-    if (!team_id || !project_id || !reg_num) {
-      alert("Missing required fields.");
-      return;
-    }
+  // Validate form
+  if (!form.review_date || !form.start_time || !form.isOptional) {
+    alert("Please fill all required fields");
+    return;
+  }
 
-    const formData = new FormData();
-    formData.append("team_id", team_id);
-    formData.append("project_id", project_id);
-    formData.append("project_name", project_name);
-    formData.append("team_lead", team_lead);
-    formData.append("mentor_reg_num", mentor_reg_num);
-    formData.append("review_date", review_date);
-    formData.append("start_time", start_time);
-    formData.append("isOptional", isOptional);
-    formData.append("reason", reason);
+  if (form.isOptional === "optional" && !form.reason) {
+    alert("Please provide a reason for optional review");
+    return;
+  }
 
-    if (selectedFile) {
-      const fileExt = selectedFile.name.split(".").pop().toLowerCase();
-      if (["pdf", "doc", "docx"].includes(fileExt)) {
-        formData.append("report", selectedFile);
-      } else if (["ppt", "pptx"].includes(fileExt)) {
-        formData.append("ppt", selectedFile);
-      } else if (["zip", "rar"].includes(fileExt)) {
-        formData.append("outcome", selectedFile);
-      } else {
-        alert("Unsupported file format.");
-        return;
+  if (!selectedFile) {
+    alert("Please upload a file");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("project_id", form.project_id);
+  formData.append("project_name", form.project_name);
+  formData.append("team_lead", form.team_lead);
+  formData.append("review_date", form.review_date);
+  formData.append("start_time", form.start_time);
+  formData.append("isOptional", form.isOptional);
+  formData.append("reason", form.reason || "");
+  formData.append("mentor_reg_num", form.mentor_reg_num || "");
+
+  // Append the correct file based on type
+  const fileExt = selectedFile.name.split(".").pop().toLowerCase();
+  if (["pdf", "doc", "docx"].includes(fileExt)) {
+    formData.append("report", selectedFile);
+  } else if (["ppt", "pptx"].includes(fileExt)) {
+    formData.append("ppt", selectedFile);
+  } else if (["zip", "rar"].includes(fileExt)) {
+    formData.append("outcome", selectedFile);
+  } else {
+    alert("Unsupported file format");
+    return;
+  }
+
+  try {
+    const response = await instance.post(
+      `/student/send_review_request/${team_id}/${form.project_id}/${reg_num}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       }
-    }
+    );
 
-    try {
-      console.log("FormData contents:");
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
-      }
-      const res = await instance.post(
-        `/student/send_review_request/${team_id}/${project_id}/${reg_num}`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-      alert(res.data);
-      setSelectedFile(null);
-      document.querySelector('input[type="file"]').value = '';
-      setForm((prev) => ({
-        ...prev,
-        review_date: "",
-        start_time: "",
-        isOptional: "",
-        reason: ""
-      }));
-      setFormSubmitted((prev) => !prev); // trigger history refresh
-    } catch (error) {
-      alert(error?.response?.data || "Error submitting request.");
-      console.error(error);
-    }
-  };
+    alert(response.data.message);
+    // Reset form
+    setForm({
+      ...form,
+      review_date: "",
+      start_time: "",
+      isOptional: "",
+      reason: "",
+    });
+    setSelectedFile(null);
+    setFormSubmitted((prev) => !prev);
+  } catch (error) {
+    console.error("Submission error:", error);
+    alert(error.response?.data?.error || "Failed to submit review request");
+  }
+};
 
   const shouldShowForm = () => {
     if (!reviewStatus) return true;

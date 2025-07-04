@@ -90,96 +90,101 @@ function ReviewProjects() {
     }
   };
 
-  // Fetch upcoming reviews for guide teams
-  const fetchGuideUpcomingReviews = async (teams) => {
+  // Fetch upcoming reviews for guide teams// Fetch upcoming reviews for guide teams
+const fetchGuideUpcomingReviews = async () => {
+  try {
+    const res = await instance.get(`/guide/fetch_upcoming_reviews/${guideRegNum}`);
+    
     const reviewMap = {};
-    for (const team of teams) {
-      try {
-        // console.log(team, "team", "fetchGuideUpcomingReviews");
-        const teamId = team.team_id || team.from_team_id;
-        const res = await instance.get(`/guide/fetch_upcoming_reviews/${guideRegNum}`);
-        // console.log(res.data, "/guide/fetch_upcoming_reviews/");
-        reviewMap[teamId] = res.data;
-
-        // Check end time status and marks status for each review
-        for (const review of res.data) {
-          checkEndTimeStatus(review.review_id || review.id);
-          checkMarksStatus(review.review_id || review.id);
+    if (Array.isArray(res.data)) {
+      res.data.forEach(review => {
+        const teamId = review.team_id;
+        if (!reviewMap[teamId]) {
+          reviewMap[teamId] = [];
         }
-      } catch (error) {
-        console.log(`No upcoming guide reviews for team ${guideRegNum}`);
-      }
+        reviewMap[teamId].push({
+          ...review,
+          meeting_link: review.temp_meeting_link,
+          review_id: review.request_id,
+          key: `${teamId}-${review.request_id}`
+        });
+        
+        checkEndTimeStatus(review.request_id);
+        checkMarksStatus(review.request_id);
+      });
     }
     setGuideUpcomingReviews(reviewMap);
-  };
+  } catch (error) {
+    console.error('Error fetching guide upcoming reviews:', error);
+    // Set empty object instead of throwing error
+    setGuideUpcomingReviews({});
+  }
+};
 
-  // Fetch upcoming reviews for expert teams
-  const fetchExpertUpcomingReviews = async (teams) => {
+// Fetch upcoming reviews for expert teams
+const fetchExpertUpcomingReviews = async () => {
+  try {
+    const res = await instance.get(`/sub_expert/fetch_upcoming_reviews/${guideRegNum}`);
+    
     const reviewMap = {};
-    // console.log(teams, "here");
-    for (const team of teams) {
-      try {
-        // console.log(team, "team1");
-        const teamId = team.team_id || team.from_team_id;
-        const res = await instance.get(`/sub_expert/fetch_upcoming_reviews/${guideRegNum}`);
-        console.log(res.data);
-        reviewMap[teamId] = res.data;
-
-        // Check end time status and marks status for each review
-        for (const review of res.data) {
-          checkEndTimeStatus(review.review_id || review.id);
-          checkMarksStatus(review.review_id || review.id);
+    if (Array.isArray(res.data)) {
+      res.data.forEach(review => {
+        const teamId = review.team_id;
+        if (!reviewMap[teamId]) {
+          reviewMap[teamId] = [];
         }
-      } catch (error) {
-        console.log(`No upcoming expert reviews for team ${team.team_id || team.from_team_id}`, error.response.data.error.message);
-      }
+        reviewMap[teamId].push({
+          ...review,
+          // Map fields to match frontend expectations
+          meeting_link: review.temp_meeting_link,
+          review_id: review.request_id
+        });
+        
+        checkEndTimeStatus(review.request_id);
+        checkMarksStatus(review.request_id);
+      });
     }
     setExpertUpcomingReviews(reviewMap);
+  } catch (error) {
+    console.error('Error fetching expert upcoming reviews:', error);
+    setExpertUpcomingReviews({});
+  }
+};
+
+
+ useEffect(() => {
+  const fetchGuideRequests = async () => {
+    try {
+      const res = await instance.get(`/guide/fetch_guiding_teams/${guideRegNum}`);
+      let teamsList = Array.isArray(res.data) && res.data.length > 0 ? res.data : [];
+      setGuideTeams(teamsList);
+      fetchGuideUpcomingReviews();
+    } catch (error) {
+      console.error('Error fetching guide teams:', error);
+    }
   };
 
-  // Fetch guide teams using the corrected API
-  useEffect(() => {
-    const fetchGuideRequests = async () => {
-      try {
-        const res = await instance.get(`/guide/fetch_guiding_teams/${guideRegNum}`);
-        let teamsList = Array.isArray(res.data) && res.data.length > 0 ? res.data : [];
+  if (guideRegNum) {
+    fetchGuideRequests();
+  }
+}, [guideRegNum]);
 
-        setExpertTeams(teamsList);
-        // console.log(teamsList, "data");
-        fetchExpertUpcomingReviews(teamsList);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    if (guideRegNum) {
-      fetchGuideRequests();
+useEffect(() => {
+  const fetchExpertRequests = async () => {
+    try {
+      const res = await instance.get(`/sub_expert/fetch_teams/${guideRegNum}`);
+      let teamsList = Array.isArray(res.data) && res.data.length > 0 ? res.data : [];
+      setExpertTeams(teamsList);
+      fetchExpertUpcomingReviews();
+    } catch (error) {
+      console.error('Error fetching expert teams:', error);
     }
-  }, [guideRegNum]);
+  };
 
-  // Fetch expert teams
-  useEffect(() => {
-    const fetchExpertRequests = async () => {
-      try {
-        const res = await instance.get(`/sub_expert/fetch_teams/${guideRegNum}`);
-        let teamsList = Array.isArray(res.data) && res.data.length > 0 ? res.data : [];
-
-        setExpertTeams(teamsList);
-        // console.log(teamsList, "data");
-        fetchExpertUpcomingReviews(teamsList);
-      } catch (error) {
-        console.log(error, "adadadadadadadadad");
-      }
-    };
-
-    if (guideRegNum) {
-      fetchExpertRequests();
-    }
-  }, [guideRegNum]);
-
-  useEffect(() => {
-    if (guideRegNum) fetchReviewRequests();
-  }, [guideRegNum]);
+  if (guideRegNum) {
+    fetchExpertRequests();
+  }
+}, [guideRegNum]);
 
   const handleReviewAction = async (request, status, isGuide) => {
     try {
